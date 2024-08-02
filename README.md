@@ -15,6 +15,9 @@ This project contains scripts to create a directory on a remote Windows or Linux
     pip install -r requirements.txt
     ```
 
+2. Create `.env` file in root directory with credentials for VM like `Hostname`, `Username` and `Password` for both Linux and Windows
+3. Make sure that the VM where you're trying to create directory with this codes have WinRM `Windows based OS` and SSH `Linux based OS` enabled 
+
 ## Running Tests
 Execute the tests using pytest:
 ```sh
