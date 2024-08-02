@@ -11,14 +11,25 @@ This project contains scripts to create a directory on a remote Windows or Linux
 
 ## Setup
 1. Install the required packages:
-    ```sh
+    ```shell
     pip install -r requirements.txt
     ```
 
 2. Create `.env` file in root directory with credentials for VM like `Hostname`, `Username` and `Password` for both Linux and Windows
-3. Make sure that the VM where you're trying to create directory with this codes have WinRM `Windows based OS` and SSH `Linux based OS` enabled 
+3. Make sure that the VM where you're trying to create directory with these codes have WinRM for `Windows based OS` and SSH for `Linux based OS` is enabled 
 
 ## Running Tests
 Execute the tests using pytest:
-```sh
-pytest tests/test_vm.py --dirpath "C:/your/full/path/to/create/test_directory"
+- Running on both Windows and Linux VM sametime:
+```shell
+pytest tests/test_vm.py --dirpath "C:/your/full/path/to/create/test_directory" --os windows,linux
+```
+- Running on either Windows or Linux:
+- For `Windows`:
+```shell
+pytest tests/test_vm.py --dirpath "C:/your/full/path/to/create/test_directory" --os windows
+```
+- For `Linux`:
+```shell
+pytest tests/test_vm.py --dirpath "C:/your/full/path/to/create/test_directory" --os linux
+```
