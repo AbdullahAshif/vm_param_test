@@ -4,8 +4,7 @@
 This project contains scripts to create a directory on a remote Windows or Linux VM, upload the script, verify the upload, execute it, and verify the directory creation using parameterized tests.
 
 ## Project Structure
-- `shell_clients/`: Contains the base and specific shell clients for Linux and Windows.
-- `utils/`: Contains utility scripts for file creation and checksum calculation.
+- `src/`: Contains the base and specific shell clients for Linux and Windows.
 - `tests/`: Contains parameterized tests using pytest.
 - `requirements.txt`: List of required Python packages.
 
@@ -18,4 +17,4 @@ This project contains scripts to create a directory on a remote Windows or Linux
 ## Running Tests
 Execute the tests using pytest:
 ```sh
-pytest tests/test_create_dir.py
+pytest tests/test_vm.py --dirpath "C:/your/full/path/to/create/test_directory"
