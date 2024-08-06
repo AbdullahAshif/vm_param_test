@@ -31,5 +31,5 @@ pytest tests/test_vm.py --dirpath "C:/your/full/path/to/create/test_directory" -
 ```
 - For `Linux`:
 ```shell
-pytest tests/test_vm.py --dirpath "C:/your/full/path/to/create/test_directory" --os linux
+pytest tests/test_vm.py --dirpath "your/full/path/to/create/test_directory" --os linux
 ```

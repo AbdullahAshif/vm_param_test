@@ -8,6 +8,12 @@ class WinRMClient:
         self.session = winrm.Session(host, auth=(username, password), transport='basic',
                                      server_cert_validation='ignore')
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
     def upload_file(self, local_path, remote_path):
         if not os.path.exists(local_path):
             raise FileNotFoundError(f"The file {local_path} does not exist.")
@@ -16,7 +22,6 @@ class WinRMClient:
             content = file.read()
         encoded_content = base64.b64encode(content).decode('utf-8')
 
-        # Create directory if it doesn't exist
         directory = os.path.dirname(remote_path)
         create_dir_script = f"""
         if (-not (Test-Path -Path "{directory}")) {{
@@ -34,14 +39,14 @@ class WinRMClient:
         if dir_creation_error:
             print(f"Directory creation error: {dir_creation_error}")
 
-        # Verify the directory was created
         dir_check_script = f"Test-Path -Path '{directory}'"
-        dir_exists_result = self.execute_command(dir_check_script).strip().lower()
+        dir_exists_result, dir_exists_error = self.execute_command(dir_check_script)
         print(f"Directory exists check result: {dir_exists_result}")
-        if dir_exists_result != "true":
+        if dir_exists_error:
+            print(f"Directory exists check error: {dir_exists_error}")
+        if dir_exists_result.strip().lower() != "true":
             raise FileNotFoundError(f"Directory {directory} does not exist after creation.")
 
-        # Upload the file
         upload_script = f"""
         try {{
             $content = [System.Convert]::FromBase64String("{encoded_content}")
@@ -64,11 +69,12 @@ class WinRMClient:
         if upload_error:
             print(f"Error uploading file: {upload_error}")
 
-        # Post-upload check
         file_exists_check = f"Test-Path -Path '{remote_path}'"
-        file_exists_result = self.execute_command(file_exists_check).strip().lower()
+        file_exists_result, file_exists_error = self.execute_command(file_exists_check)
         print(f"File exists check result: {file_exists_result}")
-        if file_exists_result != "true":
+        if file_exists_error:
+            print(f"File exists check error: {file_exists_error}")
+        if file_exists_result.strip().lower() != "true":
             raise FileNotFoundError(f"File {remote_path} does not exist after upload.")
 
     def execute_command(self, command):
@@ -79,24 +85,23 @@ class WinRMClient:
         print(f"Command output: {output}")
         if error:
             print(f"Command error: {error}")
-        return output
+        return output, error
 
-    def check_file(self, remote_path, local_checksum):
+    def get_file_checksum(self, remote_path, expected_checksum):
         checksum_script = f"""
-        $file = Get-Item -Path "{remote_path}"
-        if ($file -ne $null) {{
+        if (Test-Path -Path "{remote_path}") {{
             $checksum = Get-FileHash -Path "{remote_path}" -Algorithm SHA256
             $checksum.Hash
         }} else {{
-            Write-Output "File does not exist"
+            throw "File does not exist: {remote_path}"
         }}
         """
-        result = self.session.run_ps(checksum_script)
-        output = result.std_out.decode().strip()
-        if "File does not exist" in output:
+        try:
+            result = self.session.run_ps(checksum_script)
+            output = result.std_out.decode().strip()
+            if output.lower() != expected_checksum.lower():
+                raise ValueError(f"Checksum mismatch. Expected: {expected_checksum}, Got: {output}")
+            return output
+        except Exception as e:
+            print(f"Error: {e}")
             return None
-        return output
-
-    def close(self):
-        # WinRM sessions are stateless, so no close operation is needed
-        pass

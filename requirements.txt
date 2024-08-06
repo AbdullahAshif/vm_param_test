@@ -1,4 +1,4 @@
-pytest
-paramiko
-pywinrm
-python-dotenv
+pytest~=8.3.2
+paramiko~=3.4.0
+pywinrm~=0.5.0
+python-dotenv~=1.0.1

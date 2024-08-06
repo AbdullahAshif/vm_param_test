@@ -5,5 +5,5 @@ class BaseShellClient:
     def execute_command(self, command):
         raise NotImplementedError
 
-    def check_file(self, remote_path, checksum):
+    def get_file_checksum(self, remote_path, checksum):
         raise NotImplementedError
