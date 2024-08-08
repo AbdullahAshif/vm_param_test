@@ -1,81 +1,59 @@
 import pytest
 import os
-
 from dotenv import load_dotenv
 from src.ssh_client import SSHClient
 from src.winrm_client import WinRMClient
-from src.utils import calculate_checksum, get_base_dir, delete_remote_script
+from src.utils import get_base_dir, delete_remote_script, get_env_var, get_script_paths
+from src.os_enum import OSType
+from typing import Union
 
 load_dotenv()
 
 
 @pytest.fixture
-def shell_client(request):
-    os_option = request.config.getoption("--os")
-    if os_option == 'linux':
-        host = os.getenv('LINUX_HOST')
-        user = os.getenv('LINUX_USER')
-        password = os.getenv('LINUX_PASSWORD')
-        with SSHClient(host, user, password) as client:
-            yield client
-    elif os_option == 'windows':
-        host = os.getenv('WINDOWS_HOST')
-        user = os.getenv('WINDOWS_USER')
-        password = os.getenv('WINDOWS_PASSWORD')
-        with WinRMClient(host, user, password) as client:
-            yield client
-    else:
+def shell_client(request) -> Union[SSHClient, WinRMClient]:
+    os_option_str = request.config.getoption("--os").lower()
+
+    os_option_mapping = {
+        "linux": OSType.LINUX,
+        "windows": OSType.WINDOWS
+    }
+
+    try:
+        os_option = os_option_mapping[os_option_str]
+    except KeyError:
         pytest.fail("Please provide a valid OS option: --os=linux or --os=windows")
 
+    if os_option == OSType.LINUX:
+        host = get_env_var('LINUX_HOST')
+        user = get_env_var('LINUX_USER')
+        password = os.getenv('LINUX_PASSWORD')
+        client = SSHClient(host, user, password)
+    elif os_option == OSType.WINDOWS:
+        host = get_env_var('WINDOWS_HOST')
+        user = get_env_var('WINDOWS_USER')
+        password = get_env_var('WINDOWS_PASSWORD')
+        client = WinRMClient(host, user, password)
+    else:
+        pytest.fail("Unhandled OS type.")
 
-@pytest.mark.parametrize("shell_client", ["linux", "windows"], indirect=True)
+    with client as c:
+        yield c
+
+
+@pytest.mark.parametrize("shell_client", [OSType.LINUX.value, OSType.WINDOWS.value], indirect=True)
 @pytest.mark.linux
 @pytest.mark.windows
-def test_create_directory(shell_client, full_directory_path):
+def test_create_directory(shell_client: Union[SSHClient, WinRMClient], full_directory_path: str):
     assert full_directory_path, "No directory path specified"
     base_dir = get_base_dir()
 
-    if isinstance(shell_client, SSHClient):
-        local_script = os.path.join(base_dir, '../scripts/create_dir.sh')
-        remote_script = '/tmp/create_dir.sh'
-    else:
-        local_script = os.path.join(base_dir, '../scripts/create_dir.ps1')
-        # Use the specified directory path directly
-        remote_script = os.path.join(full_directory_path, os.path.basename(local_script))
+    local_script, remote_script = get_script_paths(shell_client, base_dir, full_directory_path)
 
     assert os.path.exists(local_script), f"Script {local_script} does not exist."
 
-    # Upload the script
-    shell_client.upload_file(local_script, remote_script)
-
-    # Verify checksum
-    local_checksum = calculate_checksum(local_script)
-    print(f"Local checksum: {local_checksum}")
-    remote_checksum = shell_client.get_file_checksum(remote_script, local_checksum)
-    print(f"Remote checksum: {remote_checksum}")
-    assert remote_checksum.lower() == local_checksum.lower(), "Checksum mismatch"
-
-    # Execute the script
-    if isinstance(shell_client, SSHClient):
-        command = f"bash {remote_script} {full_directory_path}"
-    else:
-        command = f"powershell -ExecutionPolicy Bypass -File {remote_script} -dir {full_directory_path}"
-
-    print(f"Executing command: {command}")
-    output, error = shell_client.execute_command(command)
-    print(f"Command output: {output}")
-    print(f"Command error: {error}")
-
-    # Check if directory was created
-    if isinstance(shell_client, SSHClient):
-        check_command = f"test -d {full_directory_path} && echo exists"
-    else:
-        check_command = f"if (Test-Path '{full_directory_path}') {{echo exists}}"
-
-    check_output, check_error = shell_client.execute_command(check_command)
-    print(f"Check command output: {check_output}")
-    print(f"Check command error: {check_error}")
-    assert "exists" in check_output, f"Directory {full_directory_path} not created"
-
-    # Cleanup
-    delete_remote_script(shell_client, remote_script)
+    try:
+        shell_client.execute_script(local_script, remote_script, full_directory_path)
+        assert shell_client.check_directory_exists(full_directory_path), f"Directory {full_directory_path} not created"
+    finally:
+        delete_remote_script(shell_client, remote_script)

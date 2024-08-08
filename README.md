@@ -20,16 +20,12 @@ This project contains scripts to create a directory on a remote Windows or Linux
 
 ## Running Tests
 Execute the tests using pytest:
-- Running on both Windows and Linux VM sametime:
-```shell
-pytest tests/test_vm.py --dirpath "C:/your/full/path/to/create/test_directory" --os windows,linux
-```
-- Running on either Windows or Linux:
+- Running on VM Windows or Linux:
 - For `Windows`:
 ```shell
-pytest tests/test_vm.py --dirpath "C:/your/full/path/to/create/test_directory" --os windows
+pytest tests/test_vm.py --os=windows --dirpath=drive_letter\\your\\directory\\path --dirname=your_test_directory_name
 ```
 - For `Linux`:
 ```shell
-pytest tests/test_vm.py --dirpath "your/full/path/to/create/test_directory" --os linux
+pytest tests/test_vm.py --os=linux --dirpath=your\\directory\\path --dirname=your_test_directory_name
 ```

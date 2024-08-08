@@ -1,15 +1,10 @@
 import paramiko
 import logging
 
+from src.base_client import BaseShellClient
 
-class SSHClient:
-    def __init__(self, host, username, password, port=22):
-        self.host = host
-        self.username = username
-        self.password = password
-        self.port = port
-        self.client = None
 
+class SSHClient(BaseShellClient):
     def __enter__(self):
         try:
             self.client = paramiko.SSHClient()
@@ -42,14 +37,39 @@ class SSHClient:
             logging.error(f"Failed to execute command: {e}")
             return "", str(e)
 
-    def get_file_checksum(self, remote_path, local_checksum):
-        checksum_command = f"sha256sum {remote_path} | awk '{{print $1}}'"
-        remote_checksum, stderr = self.execute_command(checksum_command)
-        if stderr:
-            logging.error(f"Error getting file checksum: {stderr}")
-        if remote_checksum.strip() == local_checksum:
-            return remote_checksum.strip()
-        return None
+    def execute_script(self, local_script, remote_script, directory):
+        # Upload the script
+        self.upload_file(local_script, remote_script)
+
+        # Verify checksum
+        local_checksum = self.calculate_checksum(local_script)
+        remote_checksum = self.get_file_checksum(remote_script, local_checksum)
+        if remote_checksum.lower() != local_checksum.lower():
+            raise ValueError("Checksum mismatch")
+
+        # Execute the script
+        command = f"bash {remote_script} {directory}"
+        output, error = self.execute_command(command)
+        if error:
+            raise RuntimeError(f"Script execution failed: {error}")
+        return output
+
+    def check_directory_exists(self, directory):
+        check_command = f"test -d {directory} && echo exists"
+        check_output, check_error = self.execute_command(check_command)
+        if check_error:
+            raise RuntimeError(f"Directory check failed: {check_error}")
+        return "exists" in check_output
+
+    def get_file_checksum(self, remote_path, expected_checksum):
+        checksum_command = f"sha256sum {remote_path}"
+        checksum_output, checksum_error = self.execute_command(checksum_command)
+        if checksum_error:
+            raise RuntimeError(f"Checksum retrieval failed: {checksum_error}")
+        checksum = checksum_output.split()[0].strip()
+        if checksum.lower() != expected_checksum.lower():
+            raise ValueError(f"Checksum mismatch. Expected: {expected_checksum}, Got: {checksum}")
+        return checksum
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.client:
