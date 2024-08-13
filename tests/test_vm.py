@@ -3,7 +3,8 @@ import os
 from dotenv import load_dotenv
 from src.ssh_client import SSHClient
 from src.winrm_client import WinRMClient
-from src.utils import get_base_dir, delete_remote_script, get_env_var, get_script_paths
+from src.utils import get_base_dir, get_env_var
+from src.shell_utils import get_script_paths, delete_remote_script
 from src.os_enum import OSType
 from typing import Union
 

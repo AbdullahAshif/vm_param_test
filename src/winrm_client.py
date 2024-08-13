@@ -9,6 +9,8 @@ from scripts.powershell_scripts import (
     file_exists_check_script,
     get_file_checksum_script
 )
+from src.utils import calculate_checksum
+
 
 class WinRMClient(BaseShellClient):
     def __init__(self, host, username, password):
@@ -83,7 +85,7 @@ class WinRMClient(BaseShellClient):
 
     def execute_script(self, local_script, remote_script, directory):
         self.upload_file(local_script, remote_script)
-        local_checksum = self.calculate_checksum(local_script)
+        local_checksum = calculate_checksum(local_script)
         remote_checksum = self.get_file_checksum(remote_script, local_checksum)
         if remote_checksum.lower() != local_checksum.lower():
             raise ValueError("Checksum mismatch")

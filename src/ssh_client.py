@@ -2,6 +2,7 @@ import paramiko
 import logging
 
 from src.base_client import BaseShellClient
+from src.utils import calculate_checksum
 
 
 class SSHClient(BaseShellClient):
@@ -42,7 +43,7 @@ class SSHClient(BaseShellClient):
         self.upload_file(local_script, remote_script)
 
         # Verify checksum
-        local_checksum = self.calculate_checksum(local_script)
+        local_checksum = calculate_checksum(local_script)
         remote_checksum = self.get_file_checksum(remote_script, local_checksum)
         if remote_checksum.lower() != local_checksum.lower():
             raise ValueError("Checksum mismatch")
