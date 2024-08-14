@@ -22,10 +22,5 @@ def delete_remote_script(client, remote_script):
     else:
         delete_command = f"Remove-Item -Path '{remote_script}' -Force"
 
-    output, error = client.execute_command(delete_command)
+    client.delete_file(remote_script)
     print(f"Command used to delete script: {delete_command}")
-    print(f"Delete command output: {output}")
-    if error:
-        print(f"Error deleting remote script {remote_script}: {error}")
-    else:
-        print(f"Successfully deleted remote script: {remote_script}")

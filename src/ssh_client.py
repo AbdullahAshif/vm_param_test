@@ -17,6 +17,17 @@ class SSHClient(BaseShellClient):
             self.client = None
         return self
 
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.client:
+            self.client.close()
+            logging.info(f"Disconnected from {self.host}.")
+
+    def execute_command(self, command):
+        stdin, stdout, stderr = self.client.exec_command(command)
+        output = stdout.read().decode('utf-8').strip()
+        error = stderr.read().decode('utf-8').strip()
+        return output, error
+
     def upload_file(self, local_path, remote_path):
         if self.client is None:
             raise ConnectionError("SSH connection not established.")
@@ -28,26 +39,20 @@ class SSHClient(BaseShellClient):
         except Exception as e:
             logging.error(f"Failed to upload file: {e}")
 
-    def execute_command(self, command):
-        if self.client is None:
-            raise ConnectionError("SSH connection not established.")
-        try:
-            stdin, stdout, stderr = self.client.exec_command(command)
-            return stdout.read().decode('utf-8'), stderr.read().decode('utf-8')
-        except Exception as e:
-            logging.error(f"Failed to execute command: {e}")
-            return "", str(e)
+    def compare_checksums(self, local_path, remote_path):
+        # Calculate local checksum
+        local_checksum = calculate_checksum(local_path)
 
-    def execute_script(self, local_script, remote_script, directory):
-        # Upload the script
-        self.upload_file(local_script, remote_script)
+        # Get remote checksum
+        remote_checksum = self.get_file_checksum(remote_path, local_checksum)
 
-        # Verify checksum
-        local_checksum = calculate_checksum(local_script)
-        remote_checksum = self.get_file_checksum(remote_script, local_checksum)
+        # Compare checksums
         if remote_checksum.lower() != local_checksum.lower():
             raise ValueError("Checksum mismatch")
 
+        logging.info("Checksum comparison successful.")
+
+    def execute_script(self, remote_script, directory):
         # Execute the script
         command = f"bash {remote_script} {directory}"
         output, error = self.execute_command(command)
@@ -68,11 +73,22 @@ class SSHClient(BaseShellClient):
         if checksum_error:
             raise RuntimeError(f"Checksum retrieval failed: {checksum_error}")
         checksum = checksum_output.split()[0].strip()
-        if checksum.lower() != expected_checksum.lower():
-            raise ValueError(f"Checksum mismatch. Expected: {expected_checksum}, Got: {checksum}")
         return checksum
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.client:
-            self.client.close()
-            logging.info(f"Disconnected from {self.host}.")
+    def run_script(self, local_script, remote_script, directory):
+        # Upload the script
+        self.upload_file(local_script, remote_script)
+
+        # Compare checksums
+        self.compare_checksums(local_script, remote_script)
+
+        # Execute the script
+        output = self.execute_script(remote_script, directory)
+        return output
+
+    def delete_file(self, remote_path):
+        delete_command = f"rm -f {remote_path}"
+        output, error = self.execute_command(delete_command)
+        if error:
+            raise RuntimeError(f"Failed to delete remote file: {error}")
+        print(f"Successfully deleted remote script: {remote_path}")

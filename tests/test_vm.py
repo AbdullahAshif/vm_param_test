@@ -54,7 +54,7 @@ def test_create_directory(shell_client: Union[SSHClient, WinRMClient], full_dire
     assert os.path.exists(local_script), f"Script {local_script} does not exist."
 
     try:
-        shell_client.execute_script(local_script, remote_script, full_directory_path)
+        shell_client.run_script(local_script, remote_script, full_directory_path)
         assert shell_client.check_directory_exists(full_directory_path), f"Directory {full_directory_path} not created"
     finally:
         delete_remote_script(shell_client, remote_script)

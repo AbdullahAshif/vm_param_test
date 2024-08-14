@@ -15,7 +15,8 @@ from src.utils import calculate_checksum
 class WinRMClient(BaseShellClient):
     def __init__(self, host, username, password):
         super().__init__(host, username, password)
-        self.session = winrm.Session(host, auth=(username, password), transport='basic', server_cert_validation='ignore')
+        self.session = (winrm.Session
+                        (host, auth=(username, password), transport='basic', server_cert_validation='ignore'))
 
     def __enter__(self):
         return self
@@ -83,12 +84,14 @@ class WinRMClient(BaseShellClient):
             print(f"Error: {e}")
             return None
 
-    def execute_script(self, local_script, remote_script, directory):
-        self.upload_file(local_script, remote_script)
+    def compare_checksums(self, local_script, remote_script):
         local_checksum = calculate_checksum(local_script)
         remote_checksum = self.get_file_checksum(remote_script, local_checksum)
         if remote_checksum.lower() != local_checksum.lower():
-            raise ValueError("Checksum mismatch")
+            raise ValueError(f"Checksum mismatch: Local ({local_checksum}), Remote ({remote_checksum})")
+        logging.info("Checksum match confirmed.")
+
+    def execute_script(self, remote_script, directory):
         command = f"powershell -ExecutionPolicy Bypass -File {remote_script} -dir {directory}"
         output, error = self.execute_command(command)
         if error:
@@ -101,3 +104,10 @@ class WinRMClient(BaseShellClient):
         if check_error:
             raise RuntimeError(f"Directory check failed: {check_error}")
         return "exists" in check_output
+
+    def delete_file(self, remote_path):
+        delete_command = f"Remove-Item -Path '{remote_path}' -Force"
+        output, error = self.execute_command(delete_command)
+        if error:
+            raise RuntimeError(f"Failed to delete remote file: {error}")
+        print(f"Successfully deleted remote script: {remote_path}")
