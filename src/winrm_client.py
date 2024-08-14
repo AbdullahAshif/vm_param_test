@@ -10,6 +10,7 @@ from scripts.powershell_scripts import (
     get_file_checksum_script
 )
 from src.utils import calculate_checksum
+from utils.assertions import assert_equal_ignore_case
 
 
 class WinRMClient(BaseShellClient):
@@ -77,12 +78,10 @@ class WinRMClient(BaseShellClient):
         try:
             result = self.session.run_ps(checksum_script)
             output = result.std_out.decode().strip()
-            if output.lower() != expected_checksum.lower():
-                raise ValueError(f"Checksum mismatch. Expected: {expected_checksum}, Got: {output}")
+            assert_equal_ignore_case(output, expected_checksum)
             return output
-        except Exception as e:
-            print(f"Error: {e}")
-            return None
+        except AssertionError as e:
+            logging.error(f"Checksum comparison failed: {e}")
 
     def compare_checksums(self, local_script, remote_script):
         local_checksum = calculate_checksum(local_script)
