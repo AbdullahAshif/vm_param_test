@@ -111,3 +111,14 @@ class WinRMClient(BaseShellClient):
         if error:
             raise RuntimeError(f"Failed to delete remote file: {error}")
         print(f"Successfully deleted remote script: {remote_path}")
+
+    def run_script(self, local_script, remote_script, directory):
+        # Upload the script
+        self.upload_file(local_script, remote_script)
+
+        # Compare checksums
+        self.compare_checksums(local_script, remote_script)
+
+        # Execute the script
+        output = self.execute_script(remote_script, directory)
+        return output
