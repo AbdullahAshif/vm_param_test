@@ -1,6 +1,6 @@
 import pytest
 
-from src.os_enum import OSType
+from src.constants import OSType
 
 
 def pytest_addoption(parser):
