@@ -73,22 +73,12 @@ class WinRMClient(BaseShellClient):
             print(f"Command error: {error}")
         return output, error
 
-    def get_file_checksum(self, remote_path, expected_checksum):
+    def get_file_checksum(self, remote_path):
         checksum_script = get_file_checksum_script(remote_path)
-        try:
-            result = self.session.run_ps(checksum_script)
-            output = result.std_out.decode().strip()
-            assert_equal_ignore_case(output, expected_checksum)
-            return output
-        except AssertionError as e:
-            logging.error(f"Checksum comparison failed: {e}")
-
-    def compare_checksums(self, local_script, remote_script):
-        local_checksum = calculate_checksum(local_script)
-        remote_checksum = self.get_file_checksum(remote_script, local_checksum)
-        if remote_checksum.lower() != local_checksum.lower():
-            raise ValueError(f"Checksum mismatch: Local ({local_checksum}), Remote ({remote_checksum})")
-        logging.info("Checksum match confirmed.")
+        result = self.session.run_ps(checksum_script)
+        if result.std_err:
+            raise RuntimeError(f"Error retrieving checksum: {result.std_err.decode().strip()}")
+        return result.std_out.decode().strip()
 
     def execute_script(self, remote_script, directory):
         command = f"powershell -ExecutionPolicy Bypass -File {remote_script} -dir {directory}"
@@ -110,14 +100,3 @@ class WinRMClient(BaseShellClient):
         if error:
             raise RuntimeError(f"Failed to delete remote file: {error}")
         print(f"Successfully deleted remote script: {remote_path}")
-
-    def run_script(self, local_script, remote_script, directory):
-        # Upload the script
-        self.upload_file(local_script, remote_script)
-
-        # Compare checksums
-        self.compare_checksums(local_script, remote_script)
-
-        # Execute the script
-        output = self.execute_script(remote_script, directory)
-        return output

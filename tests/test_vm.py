@@ -8,6 +8,7 @@ from src.shell_utils import get_script_paths, delete_remote_script
 from src.constants import OSType
 from utils.assertions import assert_equal_ignore_case
 from typing import Union
+from utils.file_utils import compare_checksums
 
 load_dotenv()
 
@@ -47,20 +48,16 @@ def shell_client(request) -> Union[SSHClient, WinRMClient]:
 @pytest.mark.linux
 @pytest.mark.windows
 def test_create_directory(shell_client: Union[SSHClient, WinRMClient], full_directory_path: str):
-    assert full_directory_path, "No directory path specified"
     base_dir = get_base_dir()
 
     local_script, remote_script = get_script_paths(shell_client, base_dir, full_directory_path)
     assert os.path.exists(local_script), f"Script {local_script} does not exist."
 
-    original_file_checksum = calculate_checksum(local_script)
-
     try:
         shell_client.upload_file(local_script, remote_script)
 
-        remote_file_checksum = shell_client.get_file_checksum(remote_script, original_file_checksum)
-
-        assert_equal_ignore_case(original_file_checksum, remote_file_checksum)
+        # Perform checksum comparison
+        compare_checksums(shell_client, local_script, remote_script)
 
         shell_client.execute_script(remote_script, full_directory_path)
 

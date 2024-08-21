@@ -39,19 +39,6 @@ class SSHClient(BaseShellClient):
         except Exception as e:
             logging.error(f"Failed to upload file: {e}")
 
-    def compare_checksums(self, local_path, remote_path):
-        # Calculate local checksum
-        local_checksum = calculate_checksum(local_path)
-
-        # Get remote checksum
-        remote_checksum = self.get_file_checksum(remote_path, local_checksum)
-
-        # Compare checksums
-        if remote_checksum.lower() != local_checksum.lower():
-            raise ValueError("Checksum mismatch")
-
-        logging.info("Checksum comparison successful.")
-
     def execute_script(self, remote_script, directory):
         # Execute the script
         command = f"bash {remote_script} {directory}"
@@ -67,24 +54,13 @@ class SSHClient(BaseShellClient):
             raise RuntimeError(f"Directory check failed: {check_error}")
         return "exists" in check_output
 
-    def get_file_checksum(self, remote_path, expected_checksum):
+    def get_file_checksum(self, remote_path):
         checksum_command = f"sha256sum {remote_path}"
         checksum_output, checksum_error = self.execute_command(checksum_command)
         if checksum_error:
             raise RuntimeError(f"Checksum retrieval failed: {checksum_error}")
         checksum = checksum_output.split()[0].strip()
         return checksum
-
-    def run_script(self, local_script, remote_script, directory):
-        # Upload the script
-        self.upload_file(local_script, remote_script)
-
-        # Compare checksums
-        self.compare_checksums(local_script, remote_script)
-
-        # Execute the script
-        output = self.execute_script(remote_script, directory)
-        return output
 
     def delete_file(self, remote_path):
         delete_command = f"rm -f {remote_path}"
