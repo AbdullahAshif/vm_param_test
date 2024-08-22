@@ -26,7 +26,10 @@ class SSHClient(BaseShellClient):
         stdin, stdout, stderr = self.client.exec_command(command)
         output = stdout.read().decode('utf-8').strip()
         error = stderr.read().decode('utf-8').strip()
-        return output, error
+        if error:
+            raise RuntimeError(f"Command execution failed: {error}")
+
+        return output
 
     def upload_file(self, local_path, remote_path):
         if self.client is None:
@@ -42,29 +45,21 @@ class SSHClient(BaseShellClient):
     def execute_script(self, remote_script, directory):
         # Execute the script
         command = f"bash {remote_script} {directory}"
-        output, error = self.execute_command(command)
-        if error:
-            raise RuntimeError(f"Script execution failed: {error}")
+        output = self.execute_command(command)
         return output
 
     def check_directory_exists(self, directory):
         check_command = f"test -d {directory} && echo exists"
-        check_output, check_error = self.execute_command(check_command)
-        if check_error:
-            raise RuntimeError(f"Directory check failed: {check_error}")
+        check_output = self.execute_command(check_command)
         return "exists" in check_output
 
     def get_file_checksum(self, remote_path):
         checksum_command = f"sha256sum {remote_path}"
-        checksum_output, checksum_error = self.execute_command(checksum_command)
-        if checksum_error:
-            raise RuntimeError(f"Checksum retrieval failed: {checksum_error}")
+        checksum_output = self.execute_command(checksum_command)
         checksum = checksum_output.split()[0].strip()
         return checksum
 
     def delete_file(self, remote_path):
         delete_command = f"rm -f {remote_path}"
-        output, error = self.execute_command(delete_command)
-        if error:
-            raise RuntimeError(f"Failed to delete remote file: {error}")
+        self.execute_command(delete_command)
         print(f"Successfully deleted remote script: {remote_path}")

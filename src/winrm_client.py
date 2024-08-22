@@ -61,8 +61,8 @@ class WinRMClient(BaseShellClient):
         error = result.std_err.decode().strip()
         print(f"Command output: {output}")
         if error:
-            print(f"Command error: {error}")
-        return output, error
+            raise RuntimeError(f"Command execution failed: {error}")
+        return output
 
     def get_file_checksum(self, remote_path):
         checksum_script = get_file_checksum_script(remote_path)
@@ -73,21 +73,15 @@ class WinRMClient(BaseShellClient):
 
     def execute_script(self, remote_script, directory):
         command = f"powershell -ExecutionPolicy Bypass -File {remote_script} -dir {directory}"
-        output, error = self.execute_command(command)
-        if error:
-            raise RuntimeError(f"Script execution failed: {error}")
+        output = self.execute_command(command)
         return output
 
     def check_directory_exists(self, directory):
         check_command = f"if (Test-Path '{directory}') {{echo exists}}"
-        check_output, check_error = self.execute_command(check_command)
-        if check_error:
-            raise RuntimeError(f"Directory check failed: {check_error}")
+        check_output = self.execute_command(check_command)
         return "exists" in check_output
 
     def delete_file(self, remote_path):
         delete_command = f"Remove-Item -Path '{remote_path}' -Force"
-        output, error = self.execute_command(delete_command)
-        if error:
-            raise RuntimeError(f"Failed to delete remote file: {error}")
+        self.execute_command(delete_command)
         print(f"Successfully deleted remote script: {remote_path}")
