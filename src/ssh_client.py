@@ -2,7 +2,6 @@ import paramiko
 import logging
 
 from src.base_client import BaseShellClient
-from src.utils import calculate_checksum
 
 
 class SSHClient(BaseShellClient):
