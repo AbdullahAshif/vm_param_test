@@ -9,8 +9,7 @@ from scripts.powershell_scripts import (
     file_exists_check_script,
     get_file_checksum_script
 )
-from src.utils import calculate_checksum
-from utils.assertions import assert_equal_ignore_case
+from utils.file_utils import read_and_encode_file
 
 
 class WinRMClient(BaseShellClient):
@@ -25,14 +24,6 @@ class WinRMClient(BaseShellClient):
     def __exit__(self, exc_type, exc_value, traceback):
         logging.info(f"Disconnected from {self.host}.")
         pass
-
-    @staticmethod
-    def read_and_encode_file(local_path):
-        if not os.path.exists(local_path):
-            raise FileNotFoundError(f"The file {local_path} does not exist.")
-        with open(local_path, 'rb') as file:
-            content = file.read()
-        return base64.b64encode(content).decode('utf-8')
 
     def create_remote_directory(self, directory):
         create_dir_script = create_directory_script(directory)
@@ -56,7 +47,7 @@ class WinRMClient(BaseShellClient):
             raise FileNotFoundError(f"File {remote_path} does not exist after upload.")
 
     def upload_file(self, local_path, remote_path):
-        encoded_content = self.read_and_encode_file(local_path)
+        encoded_content = read_and_encode_file(local_path)
         directory = os.path.dirname(remote_path)
         self.create_remote_directory(directory)
         if not self.check_remote_directory_exists(directory):

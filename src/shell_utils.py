@@ -14,13 +14,3 @@ def get_script_paths(shell_client, base_dir, full_directory_path):
     else:
         raise ValueError("Unsupported shell client type")
     return local_script, remote_script
-
-
-def delete_remote_script(client, remote_script):
-    if isinstance(client, SSHClient):
-        delete_command = f"rm -f {remote_script}"
-    else:
-        delete_command = f"Remove-Item -Path '{remote_script}' -Force"
-
-    client.delete_file(remote_script)
-    print(f"Command used to delete script: {delete_command}")

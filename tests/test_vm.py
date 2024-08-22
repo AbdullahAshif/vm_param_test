@@ -3,10 +3,9 @@ import os
 from dotenv import load_dotenv
 from src.ssh_client import SSHClient
 from src.winrm_client import WinRMClient
-from src.utils import get_base_dir, get_env_var, calculate_checksum
-from src.shell_utils import get_script_paths, delete_remote_script
+from src.utils import get_base_dir, get_env_var
+from src.shell_utils import get_script_paths
 from src.constants import OSType
-from utils.assertions import assert_equal_ignore_case
 from typing import Union
 from utils.file_utils import compare_checksums
 
@@ -64,4 +63,4 @@ def test_create_directory(shell_client: Union[SSHClient, WinRMClient], full_dire
         assert shell_client.check_directory_exists(full_directory_path), f"Directory {full_directory_path} not created"
 
     finally:
-        delete_remote_script(shell_client, remote_script)
+        shell_client.delete_file(remote_script)
