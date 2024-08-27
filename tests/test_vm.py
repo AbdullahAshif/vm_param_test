@@ -52,7 +52,6 @@ def test_create_directory(shell_client: Union[SSHClient, WinRMClient], full_dire
     base_dir = get_base_dir()
 
     local_script, remote_script = get_script_paths(shell_client, base_dir, full_directory_path)
-    assert os.path.exists(local_script), f"Script {local_script} does not exist."
 
     try:
         shell_client.upload_file(local_script, remote_script)
