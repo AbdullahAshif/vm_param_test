@@ -30,7 +30,7 @@ class WinRMClient(BaseShellClient):
         if result.std_err:
             raise RuntimeError(f"Error creating directory: {result.std_err.decode().strip()}")
 
-    def check_remote_directory_exists(self, directory):
+    def is_remote_directory_exists(self, directory):
         dir_exists_script = file_exists_check_script(directory)
         result = self.session.run_ps(dir_exists_script)
         if result.std_err:
@@ -42,14 +42,14 @@ class WinRMClient(BaseShellClient):
         result = self.session.run_ps(upload_script)
         if result.std_err:
             raise RuntimeError(f"Error uploading file: {result.std_err.decode().strip()}")
-        if not self.check_remote_directory_exists(remote_path):
+        if not self.is_remote_directory_exists(remote_path):
             raise FileNotFoundError(f"File {remote_path} does not exist after upload.")
 
     def upload_file(self, local_path, remote_path):
         encoded_content = read_and_encode_file(local_path)
         directory = os.path.dirname(remote_path)
         self.create_remote_directory(directory)
-        if not self.check_remote_directory_exists(directory):
+        if not self.is_remote_directory_exists(directory):
             raise FileNotFoundError(f"Directory {directory} does not exist after creation.")
         self.upload_file_content(encoded_content, remote_path)
 
@@ -75,7 +75,7 @@ class WinRMClient(BaseShellClient):
         output = self.execute_command(command)
         return output
 
-    def check_directory_exists(self, directory):
+    def is_directory_exists(self, directory):
         check_command = f"if (Test-Path '{directory}') {{echo exists}}"
         check_output = self.execute_command(check_command)
         return "exists" in check_output

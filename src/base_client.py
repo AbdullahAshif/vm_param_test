@@ -17,5 +17,5 @@ class BaseShellClient:
     def execute_script(self, remote_script, directory):
         raise NotImplementedError("Must be implemented in subclass")
 
-    def check_directory_exists(self, directory):
+    def is_directory_exists(self, directory):
         raise NotImplementedError("Must be implemented in subclass")

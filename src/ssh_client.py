@@ -47,7 +47,7 @@ class SSHClient(BaseShellClient):
         output = self.execute_command(command)
         return output
 
-    def check_directory_exists(self, directory):
+    def is_directory_exists(self, directory):
         check_command = f"test -d {directory} && echo exists"
         check_output = self.execute_command(check_command)
         return "exists" in check_output
