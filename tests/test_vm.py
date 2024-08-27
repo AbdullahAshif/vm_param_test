@@ -55,12 +55,8 @@ def test_create_directory(shell_client: Union[SSHClient, WinRMClient], full_dire
 
     try:
         shell_client.upload_file(local_script, remote_script)
-
-        # Perform checksum comparison
         compare_checksums(shell_client, local_script, remote_script)
-
         shell_client.execute_script(remote_script, full_directory_path)
-
         assert shell_client.check_directory_exists(full_directory_path), f"Directory {full_directory_path} not created"
 
     finally:
