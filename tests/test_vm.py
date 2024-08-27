@@ -7,6 +7,7 @@ from src.utils import get_base_dir, get_env_var
 from src.shell_utils import get_script_paths
 from src.constants import OSType
 from typing import Union
+from utils.environment_utils import verify_env_vars_exist
 from utils.file_utils import compare_checksums
 
 load_dotenv()
@@ -27,11 +28,13 @@ def shell_client(request) -> Union[SSHClient, WinRMClient]:
         pytest.fail("Please provide a valid OS option: --os=linux or --os=windows")
 
     if os_option == OSType.LINUX:
+        verify_env_vars_exist('LINUX_HOST', 'LINUX_USER', 'LINUX_PASSWORD')
         host = get_env_var('LINUX_HOST')
         user = get_env_var('LINUX_USER')
         password = os.getenv('LINUX_PASSWORD')
         client = SSHClient(host, user, password)
     elif os_option == OSType.WINDOWS:
+        verify_env_vars_exist('WINDOWS_HOST', 'WINDOWS_USER', 'WINDOWS_PASSWORD')
         host = get_env_var('WINDOWS_HOST')
         user = get_env_var('WINDOWS_USER')
         password = get_env_var('WINDOWS_PASSWORD')
@@ -43,7 +46,6 @@ def shell_client(request) -> Union[SSHClient, WinRMClient]:
         yield c
 
 
-@pytest.mark.parametrize("shell_client", [OSType.LINUX.value, OSType.WINDOWS.value], indirect=True)
 @pytest.mark.linux
 @pytest.mark.windows
 def test_create_directory(shell_client: Union[SSHClient, WinRMClient], full_directory_path: str):
