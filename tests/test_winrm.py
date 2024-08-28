@@ -4,7 +4,7 @@ import pytest
 from dotenv import load_dotenv
 from src.winrm_client import WinRMClient
 
-# Load environment variables from .env file
+# Load environment variables from .env_home file
 load_dotenv()
 
 

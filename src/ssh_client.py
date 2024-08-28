@@ -13,7 +13,7 @@ class SSHClient(BaseShellClient):
             logging.info(f"Connected to {self.host} successfully.")
         except Exception as e:
             logging.error(f"Failed to connect to {self.host}: {e}")
-            self.client = None
+            raise ConnectionError(f"Failed to connect to {self.host}: {e}") from e
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
